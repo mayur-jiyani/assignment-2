@@ -49,7 +49,7 @@ var upload = multer({
     storage
 })
 
-//rest api to create a new record into mysql database
+//rest API to insert inventory data
 app.post('/create-inventory', upload.single('avatar'), (req, res) => {
 
     // var id = req.body.id;
@@ -72,7 +72,7 @@ app.post('/create-inventory', upload.single('avatar'), (req, res) => {
     });
 });
 
-//rest api to get a single employee data
+//rest API to search inventory data
 app.get('/search-inventory', (req, res) => {
 
     var inventory_name = req.body.inventory_name;
@@ -97,5 +97,14 @@ app.get('/search-inventory', (req, res) => {
         });
 
         res.end(JSON.stringify(newArr));
+    });
+});
+
+
+//rest API to update the quantity of inventory
+app.patch('/update-inventory/:inventory_id', function (req, res) {
+    connection.query('UPDATE `inventorydata` SET `quantity`=? where `inventory_id`=?', [req.body.quantity, req.params.inventory_id], function (error, results, fields) {
+        if (error) throw error;
+        res.end(JSON.stringify(results));
     });
 });
