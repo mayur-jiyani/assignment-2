@@ -35,6 +35,7 @@ var server = app.listen(3000, "127.0.0.1", function () {
 
 const storage = multer.memoryStorage()
 var upload = multer({
+    dest: 'public',
     limits: {
         fileSize: 1000000
     },
@@ -45,7 +46,6 @@ var upload = multer({
 
         cb(undefined, true)
     },
-    dest: './public',
     storage
 })
 
@@ -72,3 +72,30 @@ app.post('/create-inventory', upload.single('avatar'), (req, res) => {
     });
 });
 
+//rest api to get a single employee data
+app.get('/search-inventory', (req, res) => {
+
+    var inventory_name = req.body.inventory_name;
+
+
+    connection.query('select inventory_name, inventory_category, expiry_time, quantity, inventory_id, inventory_image from inventorydata where inventory_name=?', [inventory_name], function (error, results, fields) {
+        if (error) throw error;
+
+        const dateInPast = function (firstDate, secondDate) {
+            if (firstDate.setHours(0, 0, 0, 0) <= secondDate.setHours(0, 0, 0, 0)) {
+                return true;
+            }
+
+            return false;
+        };
+
+
+        const newArr = results.map((element) => {
+            is_expired = dateInPast(element.expiry_time, new Date())
+            element.is_expired = is_expired
+            return element
+        });
+
+        res.end(JSON.stringify(newArr));
+    });
+});
