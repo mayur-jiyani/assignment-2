@@ -50,7 +50,7 @@ var upload = multer({
 })
 
 //rest API to insert inventory data
-app.post('/create-inventory', upload.single('avatar'), (req, res) => {
+app.post('/inventory/create', upload.single('avatar'), (req, res) => {
 
     // var id = req.body.id;
     var inventory_name = req.body.inventory_name;
@@ -73,7 +73,7 @@ app.post('/create-inventory', upload.single('avatar'), (req, res) => {
 });
 
 //rest API to search inventory data
-app.get('/search-inventory', (req, res) => {
+app.get('/inventory/search', (req, res) => {
 
     var inventory_name = req.body.inventory_name;
 
@@ -102,9 +102,47 @@ app.get('/search-inventory', (req, res) => {
 
 
 //rest API to update the quantity of inventory
-app.patch('/update-inventory/:inventory_id', function (req, res) {
-    connection.query('UPDATE `inventorydata` SET `quantity`=? where `inventory_id`=?', [req.body.quantity, req.params.inventory_id], function (error, results, fields) {
+app.patch('/inventory/update/:inventory_id', (req, res) => {
+    connection.query('UPDATE `inventorydata` SET `quantity`=? where `inventory_id`=?', [req.body.quantity, req.params.inventory_id], (error, results, fields) => {
         if (error) throw error;
         res.end(JSON.stringify(results));
     });
+});
+
+
+//rest api to delete record from mysql database by id
+app.delete('/delete/inventory/:inventory_id', (req, res) => {
+    // console.log(req.body);
+    connection.query('DELETE FROM `inventorydata` WHERE `inventory_id`=?', [req.params.inventory_id], (error, results, fields) => {
+        if (error) throw error;
+        res.end('Record has been deleted!');
+    });
+});
+
+
+//rest api to delete record from mysql database by inventory name
+app.delete('/inventory/delete/name', (req, res) => {
+
+    var inventory_name = req.body.inventory_name;
+    connection.query('DELETE FROM `inventorydata` WHERE `inventory_name`=?', [inventory_name], (error, results, fields) => {
+        if (error) throw error;
+        res.end('Record has been deleted!');
+    });
+});
+
+
+//rest api to delete image from mysql database
+app.patch('/inventory/delete/image/:inventory_id', (req, res) => {
+
+    connection.query('UPDATE `inventorydata` SET `inventory_image`=? where `inventory_id`=?', [' ', req.params.inventory_id], (error, results, fields) => {
+        if (error) throw error;
+
+        res.end(JSON.stringify(results));
+    });
+
+    // connection.query('select inventory_image from inventorydata where inventory_name=?', ['banana'], function (error, results, fields) {
+    //     if (error) throw error;
+
+    //     res.end(JSON.stringify(results));
+    // });
 });
