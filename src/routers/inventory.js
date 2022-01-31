@@ -2,6 +2,7 @@ const express = require("express")
 const router = new express.Router()
 var mysql = require('mysql2');
 const multer = require('multer');
+const logger = require('../logger');
 
 
 var connection = mysql.createConnection({
@@ -13,8 +14,11 @@ var connection = mysql.createConnection({
 
 
 connection.connect((err) => {
-    if (err) throw err
-    console.log('You are now connected...')
+    if (err) {
+        logger.error(err)
+        throw err;
+    }
+    logger.info('You are now connected...')
 })
 
 const storage = multer.memoryStorage()
@@ -52,7 +56,10 @@ router.post('/inventory/create', upload.single('avatar'), (req, res) => {
     VALUES ("${inventory_name}", "${inventory_category}","${expiry_time}","${quantity}","${manufacturing_time}","${inventory_image}")`
 
     connection.query(sql, (error, results, fields) => {
-        if (error) throw error;
+        if (error) {
+            logger.error(error)
+            throw error;
+        }
         res.send("successfully added");
     });
 });
@@ -64,7 +71,10 @@ router.get('/inventory/search', (req, res) => {
 
 
     connection.query('select inventory_name, inventory_category, expiry_time, quantity, inventory_id, inventory_image from inventorydata where inventory_name=?', [inventory_name], (error, results, fields) => {
-        if (error) throw error;
+        if (error) {
+            logger.error(error)
+            throw error;
+        }
 
         const dateInPast = (firstDate, secondDate) => {
             if (firstDate.setHours(0, 0, 0, 0) <= secondDate.setHours(0, 0, 0, 0)) {
@@ -95,22 +105,29 @@ router.patch('/inventory/update/:inventory_id', (req, res) => {
     const isValidOperation = updates.every((update) => allowedUpdates.includes(update))
 
     if (!isValidOperation) {
+        logger.error('Invalid updates!')
         return res.status(400).send({ error: 'Invalid updates!' })
     }
 
 
     connection.query('UPDATE `inventorydata` SET `quantity`=? where `inventory_id`=?', [req.body.quantity, req.params.inventory_id], (error, results, fields) => {
-        if (error) throw error;
+        if (error) {
+            logger.error(error)
+            throw error;
+        }
         res.end(JSON.stringify(results));
     });
 });
 
 
 //rest api to delete record from mysql database by id
-router.delete('/delete/inventory/:inventory_id', (req, res) => {
+router.delete('/inventory/delete/:inventory_id', (req, res) => {
     // console.log(req.body);
     connection.query('DELETE FROM `inventorydata` WHERE `inventory_id`=?', [req.params.inventory_id], (error, results, fields) => {
-        if (error) throw error;
+        if (error) {
+            logger.error(error)
+            throw error;
+        }
         res.end('Record has been deleted!');
     });
 });
@@ -121,7 +138,10 @@ router.delete('/inventory/delete/name', (req, res) => {
 
     var inventory_name = req.body.inventory_name;
     connection.query('DELETE FROM `inventorydata` WHERE `inventory_name`=?', [inventory_name], (error, results, fields) => {
-        if (error) throw error;
+        if (error) {
+            logger.error(error)
+            throw error;
+        }
         res.end('Record has been deleted!');
     });
 });
@@ -131,7 +151,10 @@ router.delete('/inventory/delete/name', (req, res) => {
 router.patch('/inventory/delete/image/:inventory_id', (req, res) => {
 
     connection.query('UPDATE `inventorydata` SET `inventory_image`=? where `inventory_id`=?', [' ', req.params.inventory_id], (error, results, fields) => {
-        if (error) throw error;
+        if (error) {
+            logger.error(error)
+            throw error;
+        }
 
         res.end(JSON.stringify(results));
     });
