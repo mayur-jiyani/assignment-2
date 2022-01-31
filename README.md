@@ -23,7 +23,8 @@ CREATE TABLE IF NOT EXISTS `inventoryData` (
 `expiry_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'expiry time',
 `quantity` int(11) NOT NULL COMMENT 'quantity',
 `manufacturing_time` DATETIME NOT NULL COMMENT 'manufacturing time',
-`inventory_image` LONGBLOB NOT NULL COMMENT 'inventory image',
+`inventory_image` varchar(255) NOT NULL COMMENT 'inventory image',
+`is_deleted` TINYINT DEFAULT 0,
 PRIMARY KEY (`inventory_id`)
 ) ENGINE=InnoDB COMMENT='datatable demo table';
 ```
