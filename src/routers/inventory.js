@@ -23,12 +23,15 @@ connection.connect((err) => {
 
 const storage = multer.memoryStorage()
 var upload = multer({
-    dest: 'public',
+    destination: '../../public/img/',
     limits: {
         fileSize: 1000000
     },
     fileFilter(req, file, cb) {
         if (!file.originalname.match(/\.(jpg|png|jpeg)$/)) {
+
+            logger.error('Upload an image')
+
             return cb(new Error('Upload an image'))
         }
 
@@ -123,12 +126,21 @@ router.patch('/inventory/update/:inventory_id', (req, res) => {
 //rest api to delete record from mysql database by id
 router.delete('/inventory/delete/:inventory_id', (req, res) => {
     // console.log(req.body);
+
+
     connection.query('DELETE FROM `inventorydata` WHERE `inventory_id`=?', [req.params.inventory_id], (error, results, fields) => {
         if (error) {
             logger.error(error)
             throw error;
         }
-        res.end('Record has been deleted!');
+
+        //if requested id not found then
+        if (results.affectedRows === 0) {
+            logger.error("Id not found")
+            return res.status(400).send({ error: 'Id not found' })
+        }
+
+        res.end(JSON.stringify(results));
     });
 });
 
@@ -138,10 +150,18 @@ router.delete('/inventory/delete/name', (req, res) => {
 
     var inventory_name = req.body.inventory_name;
     connection.query('DELETE FROM `inventorydata` WHERE `inventory_name`=?', [inventory_name], (error, results, fields) => {
+
         if (error) {
             logger.error(error)
             throw error;
         }
+
+        //if requested name not found then
+        if (results.affectedRows === 0) {
+            logger.error("Name not found")
+            return res.status(400).send({ error: 'Name not found' })
+        }
+
         res.end('Record has been deleted!');
     });
 });
@@ -154,6 +174,12 @@ router.patch('/inventory/delete/image/:inventory_id', (req, res) => {
         if (error) {
             logger.error(error)
             throw error;
+        }
+
+        //if requested id not found then
+        if (results.affectedRows === 0) {
+            logger.error("Id not found")
+            return res.status(400).send({ error: 'Id not found' })
         }
 
         res.end(JSON.stringify(results));
