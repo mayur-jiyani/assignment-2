@@ -3,6 +3,7 @@ const router = new express.Router()
 var mysql = require('mysql2');
 const multer = require('multer');
 const logger = require('../logger');
+const fs = require('fs')
 
 
 var connection = mysql.createConnection({
@@ -21,23 +22,47 @@ connection.connect((err) => {
     logger.info('You are now connected...')
 })
 
-const storage = multer.memoryStorage()
-var upload = multer({
-    destination: '../../public/img/',
-    limits: {
-        fileSize: 1000000
+// const storage = multer.memoryStorage()
+// var upload = multer({
+//     dest: 'public/img',
+//     limits: {
+//         fileSize: 1000000
+//     },
+//     fileFilter(req, file, cb) {
+//         if (!file.originalname.match(/\.(jpg|png|jpeg)$/)) {
+
+//             logger.error('Upload an image')
+
+//             return cb(new Error('Upload an image'))
+//         }
+
+//         cb(undefined, true)
+//     },
+//     storage
+// })
+
+var storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'public/');
     },
+    filename: function (req, file, cb) {
+        // let extension = file.originalname.split(".").pop()
+        cb(null, file.originalname);
+    }
+});
+
+const upload = multer({
+    storage: storage,
     fileFilter(req, file, cb) {
-        if (!file.originalname.match(/\.(jpg|png|jpeg)$/)) {
+        if (!file.originalname.match(/\.(png|jpeg|jpg)$/)) {
 
-            logger.error('Upload an image')
+            logger.error('Please upload an Image.')
 
-            return cb(new Error('Upload an image'))
+            return cb(new Error('Please upload an Image.'))
         }
-
+        // console.log(req, file)
         cb(undefined, true)
-    },
-    storage
+    }
 })
 
 //rest API to insert inventory data
@@ -49,7 +74,8 @@ router.post('/inventory/create', upload.single('avatar'), (req, res) => {
     var expiry_time = req.body.expiry_time;
     var quantity = req.body.quantity;
     var manufacturing_time = req.body.manufacturing_time;
-    var inventory_image = upload;
+    var inventory_image = 'G:/Mtech/assign/assignment-2/public/' + req.file.filename;
+
 
     //converting time into CST
     expiry_time = expiry_time.toLocaleString('en-US', { timeZone: 'CST' })
@@ -73,7 +99,7 @@ router.get('/inventory/search', (req, res) => {
     var inventory_name = req.body.inventory_name;
 
 
-    connection.query('select inventory_name, inventory_category, expiry_time, quantity, inventory_id, inventory_image from inventorydata where inventory_name=?', [inventory_name], (error, results, fields) => {
+    connection.query('select inventory_name, inventory_category, expiry_time, quantity, inventory_id, inventory_image from inventorydata where `inventory_name`=?', [inventory_name], (error, results, fields) => {
         if (error) {
             logger.error(error)
             throw error;
@@ -90,6 +116,12 @@ router.get('/inventory/search', (req, res) => {
 
         const newArr = results.map((element) => {
             is_expired = dateInPast(element.expiry_time, new Date())
+            // console.log(element.expiry_time);
+            // p = new Date().toLocaleString('en-US', { timeZone: 'CST' })
+
+            // console.log(p.toISOString());
+
+
             element.is_expired = is_expired
             return element
         });
@@ -170,7 +202,7 @@ router.delete('/inventory/delete/name', (req, res) => {
 //rest api to delete image from mysql database
 router.patch('/inventory/delete/image/:inventory_id', (req, res) => {
 
-    connection.query('UPDATE `inventorydata` SET `inventory_image`=? where `inventory_id`=?', [' ', req.params.inventory_id], (error, results, fields) => {
+    connection.query('UPDATE `inventorydata` SET `is_deleted`=? where `inventory_id`=?', ['1', req.params.inventory_id], (error, results, fields) => {
         if (error) {
             logger.error(error)
             throw error;
@@ -182,7 +214,23 @@ router.patch('/inventory/delete/image/:inventory_id', (req, res) => {
             return res.status(400).send({ error: 'Id not found' })
         }
 
-        res.end(JSON.stringify(results));
+
+        connection.query('select inventory_image from inventorydata where `inventory_id`=?', [req.params.inventory_id], (error, results, fields) => {
+            fs.unlink(results[0].inventory_image, (error) => {
+
+                if (error) {
+                    logger.error(error)
+                    throw error;
+                }
+
+
+                logger.info('successfully unlink image data')
+            })
+
+            res.end('successfully deleted image.');
+        });
+
+        // res.end(JSON.stringify(results));
     });
 
     // connection.query('select inventory_image from inventorydata where inventory_name=?', ['banana'],  (error, results, fields)=> {
