@@ -211,32 +211,35 @@ router.delete('/inventory/delete/name', (req, res) => {
 //rest api to delete image from mysql database
 router.patch('/inventory/delete/image/:inventory_id', (req, res) => {
 
-    connection.query('UPDATE `inventorydata` SET `is_deleted`=? where `inventory_id`=?', ['1', req.params.inventory_id], (error, results, fields) => {
-        if (error) {
-            logger.error(error)
-            throw error;
-        }
-
-        //if requested id not found then
-        if (results.affectedRows === 0) {
-            logger.error("Id not found")
-            return res.status(400).send({ error: 'Id not found' })
-        }
+    connection.query('select inventory_image from inventorydata where `inventory_id`=?', [req.params.inventory_id], (error, results, fields) => {
 
 
-        connection.query('select inventory_image from inventorydata where `inventory_id`=?', [req.params.inventory_id], (error, results, fields) => {
-            fs.unlink(results[0].inventory_image, (error) => {
+        fs.unlink(results[0].inventory_image, (error) => {
 
-                if (error) {
-                    logger.error(error)
-                    throw error;
-                }
+            if (error) {
+                logger.error(error)
+                throw error;
+            }
 
 
-                logger.info('successfully unlink image data')
-            })
+            logger.info('successfully unlink image data')
+        })
 
-            res.end('successfully deleted image.');
+        res.end('successfully deleted image.');
+
+        connection.query('UPDATE `inventorydata` SET `is_deleted`=? , `inventory_image`=? where `inventory_id`=?', ['1', ' ', req.params.inventory_id], (error, results, fields) => {
+            if (error) {
+                logger.error(error)
+                throw error;
+            }
+
+            //if requested id not found then
+            if (results.affectedRows === 0) {
+                logger.error("Id not found")
+                return res.status(400).send({ error: 'Id not found' })
+            }
+
+
         });
 
         // res.end(JSON.stringify(results));
