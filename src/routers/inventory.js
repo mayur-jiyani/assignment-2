@@ -4,7 +4,7 @@ var mysql = require('mysql2');
 const multer = require('multer');
 const logger = require('../logger');
 const fs = require('fs')
-
+const moment = require('moment-timezone');
 
 var connection = mysql.createConnection({
     host: 'localhost',
@@ -78,8 +78,8 @@ router.post('/inventory/create', upload.single('avatar'), (req, res) => {
 
 
     //converting time into CST
-    expiry_time = expiry_time.toLocaleString('en-US', { timeZone: 'CST' })
-    manufacturing_time = manufacturing_time.toLocaleString('en-US', { timeZone: 'CST' })
+    expiry_time = moment.tz(expiry_time, "America/Chicago").format()
+    manufacturing_time = moment.tz(manufacturing_time, "America/Chicago").format()
 
     var sql = `INSERT INTO inventorydata (inventory_name, inventory_category, expiry_time,quantity,manufacturing_time,inventory_image) 
     VALUES ("${inventory_name}", "${inventory_category}","${expiry_time}","${quantity}","${manufacturing_time}","${inventory_image}")`
@@ -99,28 +99,27 @@ router.get('/inventory/search', (req, res) => {
     var inventory_name = req.body.inventory_name;
 
 
-    connection.query('select inventory_name, inventory_category, expiry_time, quantity, inventory_id, inventory_image from inventorydata where `inventory_name`=?', [inventory_name], (error, results, fields) => {
+    connection.query('select inventory_name, inventory_category, expiry_time, quantity, inventory_id, inventory_image from inventorydata where `inventory_name`=? or inventory_category', [inventory_name], (error, results, fields) => {
         if (error) {
             logger.error(error)
             throw error;
         }
 
         const dateInPast = (firstDate, secondDate) => {
-            if (firstDate.setHours(0, 0, 0, 0) <= secondDate.setHours(0, 0, 0, 0)) {
-                return true;
+            if ((firstDate == '0000-00-00 00:00:00') || (firstDate > secondDate)) {
+                return false
             }
-
-            return false;
+            return true
         };
 
 
         const newArr = results.map((element) => {
-            is_expired = dateInPast(element.expiry_time, new Date())
-            // console.log(element.expiry_time);
-            // p = new Date().toLocaleString('en-US', { timeZone: 'CST' })
 
-            // console.log(p.toISOString());
+            // convert current date into CST
+            current_date = moment.tz(new Date(), "America/Chicago").format()
 
+            //check date is expired or not
+            is_expired = dateInPast(element.expiry_time, current_date)
 
             element.is_expired = is_expired
             return element
