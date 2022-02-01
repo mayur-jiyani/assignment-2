@@ -96,10 +96,20 @@ router.post('/inventory/create', upload.single('avatar'), (req, res) => {
 //rest API to search inventory data
 router.get('/inventory/search', (req, res) => {
 
-    var inventory_name = req.body.inventory_name;
+    // var inventory_name = req.body.inventory_name;
+
+    const updates = Object.keys(req.body)
+    const updateData = Object.values(req.body)
+    const allowedUpdates = ['inventory_name', 'inventory_category']
+    const isValidOperation = updates.every((update) => allowedUpdates.includes(update))
+
+    if (!isValidOperation) {
+        logger.error('Invalid updates!')
+        return res.status(400).send({ error: 'Invalid updates!' })
+    }
 
 
-    connection.query('select inventory_name, inventory_category, expiry_time, quantity, inventory_id, inventory_image from inventorydata where `inventory_name`=? or inventory_category', [inventory_name], (error, results, fields) => {
+    connection.query('select inventory_name, inventory_category, expiry_time, quantity, inventory_id, inventory_image from inventorydata where `inventory_name` = ? OR `inventory_category` = ?', [updateData, updateData], (error, results, fields) => {
         if (error) {
             logger.error(error)
             throw error;
